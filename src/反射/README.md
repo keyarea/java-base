@@ -339,3 +339,40 @@ public class Demo{
     }
 }
 ````
+
+输出
+
+```
+______________________获取public修饰的方法_____________________________
+public java.lang.String 反射.People.getName()
+public void 反射.People.setName(java.lang.String)
+public void 反射.People.method(java.lang.String)
+public int 反射.People.getAge()
+public java.lang.String 反射.People.geteName()
+public void 反射.People.setAge(int)
+public final void java.lang.Object.wait() throws java.lang.InterruptedException
+public final void java.lang.Object.wait(long,int) throws java.lang.InterruptedException
+public final native void java.lang.Object.wait(long) throws java.lang.InterruptedException
+public boolean java.lang.Object.equals(java.lang.Object)
+public java.lang.String java.lang.Object.toString()
+public native int java.lang.Object.hashCode()
+public final native java.lang.Class java.lang.Object.getClass()
+public final native void java.lang.Object.notify()
+public final native void java.lang.Object.notifyAll()
+______________________获取所有的方法_____________________________
+public java.lang.String 反射.People.getName()
+public void 反射.People.setName(java.lang.String)
+public void 反射.People.method(java.lang.String)
+protected void 反射.People.method3()
+public int 反射.People.getAge()
+private void 反射.People.method1()
+public java.lang.String 反射.People.geteName()
+public void 反射.People.setAge(int)
+java.lang.String 反射.People.method2(java.lang.String)
+______________________获取特定方法(带参数)并使用_____________________________
+public void 反射.People.method(java.lang.String)
+______________________获取特定方法(不带参数)并使用_____________________________
+private void 反射.People.method1()
+hello
+hello
+```
