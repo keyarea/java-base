@@ -134,3 +134,108 @@ public class ThreadDemo {
 
 在Java程序的执行过程儿之中，考虑到对于不同层次开发者的需求，所以其支持有本地的操作系统函数调用，而这项技术就被称为JNI技术，但是Java开发之中并不推荐这样使用，利用这项技术
 可以使用一些操作系统提供的底层函数进行一些特殊处理，而在Thread类里面提供的start0()就表示需要将此方法依赖于不同的操作系统实现。
+
+![](http://imgs.loong.io/image/Thread/ThreadStart0.jpg)
+
+任何情况下,只要定义了多线程,多线程的启动永远只有一种方案:Thread类中的start()方法.
+
+## 基于Runnable接口实现多线程
+
+虽然可以通过Thread类的继承来实现多线程的定义,但是在Java程序里面对于继承永远都是存在有单继承局限的,所以在Java里面又提供有第二种多线程的主题结构定义形式:实现java.lang.Runnable接口,
+此接口定义如下:
+
+```
+@FunctionalInterface
+public interface Runnable { // 从jdk1.8引入Lambda表达式之后就变为了函数式接口
+    public void run();
+}
+```
+
+范例: 通过Runnable实现多线程的主体类
+
+```
+/**
+ * 通过实现Runnable接口实现多线程
+ */
+
+class SecondThread implements Runnable { // 线程的主体类
+    private String title;
+    public SecondThread(String title){
+        this.title = title;
+    }
+    @Override
+    public void run() { // 线程的主体方法
+        for( int x =0; x < 10; x++) {
+            System.out.println(this.title + "运行， x = "  + x);
+        }
+    }
+    
+}
+```
+
+但是此时由于不再继承Thread父类了,那么对于此时的SecondThread类中也不再支持有start()这个继承的方法,可是如果不使用start()方法是无法进行多线程启动的,
+那么这个时候就需要观察一下Thread类提供的构造方法:
+
+> 构造方法:`public Thread(Runnable target);`
+
+范例: 启动多线程
+
+```java
+/**
+ * 通过实现Runnable接口实现多线程
+ */
+
+class SecondThread implements Runnable { // 线程的主体类
+    private String title;
+    public SecondThread(String title){
+        this.title = title;
+    }
+    @Override
+    public void run() { // 线程的主体方法
+        for( int x =0; x < 10; x++) {
+            System.out.println(this.title + "运行， x = "  + x);
+        }
+    }
+
+}
+
+public class ThreadDemo {
+    public static void main(String[] args) {
+        Thread threadA = new Thread(new SecondThread("线程A"));
+        Thread threadB = new Thread(new SecondThread("线程B"));
+        Thread threadC = new Thread(new SecondThread("线程C"));
+        threadA.start(); // 启动多线程
+        threadB.start(); // 启动多线程
+        threadC.start(); // 启动多线程
+    }
+}
+```
+
+这个时候的多线程实现里面可以发现,由于只是实现了Runnable接口对象,所以此时线程主体类上就不再有单继承的局限了,那么这样的设计才是一个标准性的设计.
+
+可以发现从jdk1.8开始,Runnable使用了函数式接口定义,所以也可以直接利用Lambda表达式进行线程类的实现.
+
+范例: 利用Lambda实现多线程定义
+
+```java
+public class ThreadDemo {
+    public static void main(String[] args) {
+        /*
+         * 利用Lambda表达式实现多线程
+         */
+
+        for(int x = 0; x < 3; x++) {
+            String title = "进程" + x;
+            Runnable run = () -> {
+                for (int y = 0; y < 10; y++){
+                    System.out.println(title + "运行, y = " + y);
+                }
+            };
+            new Thread(run).start();
+        }
+
+    }
+}
+```
+
+在以后的开发之中对于多线程的实现,优先考虑的就是Runnable接口实现,并且永恒都是通过Thread类对象启动多线程.
