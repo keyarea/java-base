@@ -517,3 +517,1018 @@ public class LinkDemo2 {
 
 链表可以像数组一样进行处理,所以也应该可以像数组一样进行索引数据的获取,在这样的情况下就可以继续利用
 递归的形式来完成.
+
+![](http://imgs.loong.io/image/linkedlist/getDataByIndex.png)
+
+> 1.在ILink接口里面追加有新的方法
+
+```
+public E get(int index); // 根据索引获取数据
+```
+> 2.在Node类中追加有根据索引获取数据的处理
+
+```
+ public E getNode(int index) {
+    if(LinkImpl.this.foot ++ == index) { // 索引相同
+        return this.data;  // 要返回当前数据
+    } else {
+        return this.next.getNode(index);
+    }
+}
+```
+
+> 3.在LinkImpl子类里面定义数据获取的实现
+
+```
+  @Override
+    public E get(int index) {
+        if (index >= this.count) { // 索引应该在指定范围之内
+            return null;
+        } // 索引数据的获取应该由Node来完成
+        this.foot = 0; // 重置角标
+        return this.root.getNode(index);
+    }
+```
+
+这一特点是和数组很相似的，但是需要注意的是，数组获取一个数据的时间复杂度为1，而链表获取数据的时间复杂度为n.
+
+> 完整代码
+
+```java
+package 链表;
+
+interface ILink<E> { // 设置泛型避免安全隐患
+    public void add(E e); // 增加数据
+    public int size(); // 获取数据的个数
+    public boolean isEmpty(); // 判断是否为空集合
+    public Object[] toArray(); // 将集合元素以数组的形式返回
+    public E get(int index); // 根据索引获取数据
+}
+
+class LinkImpl<E> implements ILink<E> {
+    private class Node { // 保存的节点的数据关系
+        private E data; //保存的数据
+        private Node next; // 保存的下一个引用
+        public Node (E data) {  // 有数据的情况下才有意义
+            this.data = data;
+        }
+        // 第一次调用: this = LinkImpl.root;
+        // 第二次调用: this = LinkImpl.root.next;
+        // 第三次调用: this = LinkImpl.root.next.next;
+        public void addNode (Node newNode) { // 保存新的Node数据集
+            if(this.next == null){  // 当前节点的下一个节点为null
+                this.next = newNode; // 保存当前节点
+            }else{
+                this.next.addNode(newNode);
+            }
+        }
+
+        public void toArrayNode () {
+            LinkImpl.this.returnData [LinkImpl.this.foot ++] = this.data;
+            if(this.next != null) { // 还有下一个数据
+                this.next.toArrayNode();
+            }
+        }
+
+        public E getNode(int index) {
+            if(LinkImpl.this.foot ++ == index) { // 索引相同
+                return this.data;  // 要返回当前数据
+            } else {
+                return this.next.getNode(index);
+            }
+        }
+
+    }
+    // ---------------以下为Link类中定义的成员-----------------
+    private Node root;  // 根节点
+    private int count; // 保存数据的个数
+    private int foot; // 描述的是操作数组的脚标
+    private Object [] returnData; // 返回的数据
+    // ---------------以下为Link类中定义的方法-----------------
+    @Override
+    public void add(E e) {
+        // 数据本身不具有关联特性,只有Node节点有,那么要实现关联就必须将数据包装在Node类中
+        Node node = new Node(e); // 创建一个新的节点
+        if(root == null) { // 现在没有根节点
+            this.root = node; // 第一个节点作为根节点
+        }else{
+            this.root.addNode(node); // 将新节点保存在合适的位置
+        }
+        this.count ++;
+    }
+
+    @Override
+    public int size() {
+        return this.count;
+    }
+
+    @Override
+    public boolean isEmpty() {
+        // return this.root == null;
+        return this.count == 0;
+    }
+
+    @Override
+    public Object[] toArray() {
+        // 判断是否为空
+        if(this.root == null){
+            return null;
+        }
+        this.foot = 0; //脚标清零
+        this.returnData =  new Object[this.count]; // 根据已有的长度新建一个数组
+        this.root.toArrayNode(); // 利用Node类进行递归获取数据
+        return this.returnData;
+    }
+
+    @Override
+    public E get(int index) {
+        if (index >= this.count) { // 索引应该在指定范围之内
+            return null;
+        } // 索引数据的获取应该由Node来完成
+        this.foot = 0; // 重置角标
+        return this.root.getNode(index);
+    }
+
+}
+
+public class LinkDemo2 {
+    public static void main(String args[]) {
+        ILink<String> all = new LinkImpl<>();
+        System.out.println("[增加之前]数据的个数:" + all.size());
+        System.out.println("是否为空集合:" + all.isEmpty());
+        all.add("Hello");
+        all.add("World");
+        System.out.println("[增加之后]数据的个数:" + all.size());
+        System.out.println("是否为空集合:" + all.isEmpty());
+
+        Object[] result = all.toArray();
+        for (Object obj : result) {
+            System.out.println(obj);
+        }
+
+        System.out.println("**************************数据获取***************************");
+        System.out.println("获取第一个数据: " + all.get(0));
+        System.out.println("获取第二个数据: " + all.get(1));
+    }
+}
+```
+
+## 修改指定索引数据
+
+现在已经可以根据索引来获取指定的数据了，但是既然可以获取数据，那么也可以进行数据的修改。
+
+> 1.在ILink接口中追加有新的方法
+
+```
+public void set(int index,E data) ; // 修改索引数据
+```
+
+> 2.在Node类中应该提供有数据的修改的处理支持；
+
+```
+public void setNode(int index, E data) {
+    if(LinkImpl.this.foot ++ == index) { // 索引相同
+        this.data = data;  // 要返回当前数据
+    } else {
+        this.next.setNode(index, data);
+    }
+}
+```
+
+> 3.在LinkImpl的子类里面进行方法的覆写
+
+```
+@Override
+public void set(int index, E data) {
+    if (index >= this.count) { // 索引应该在指定范围之内
+        return ;
+    } // 索引数据的获取应该由Node来完成
+    this.foot = 0; // 重置角标
+    this.root.setNode(index, data); // 修改数据
+}
+```
+
+这种操作的时间复杂度也是n，因为依然需要进行数据的遍历处理。
+
+> 完整代码
+
+```java
+package 链表;
+
+interface ILink<E> { // 设置泛型避免安全隐患
+    public void add(E e); // 增加数据
+    public int size(); // 获取数据的个数
+    public boolean isEmpty(); // 判断是否为空集合
+    public Object[] toArray(); // 将集合元素以数组的形式返回
+    public E get(int index); // 根据索引获取数据
+    public void set(int index,E data) ; // 修改索引数据
+}
+
+class LinkImpl<E> implements ILink<E> {
+    private class Node { // 保存的节点的数据关系
+        private E data; //保存的数据
+        private Node next; // 保存的下一个引用
+        public Node (E data) {  // 有数据的情况下才有意义
+            this.data = data;
+        }
+        // 第一次调用: this = LinkImpl.root;
+        // 第二次调用: this = LinkImpl.root.next;
+        // 第三次调用: this = LinkImpl.root.next.next;
+        public void addNode (Node newNode) { // 保存新的Node数据集
+            if(this.next == null){  // 当前节点的下一个节点为null
+                this.next = newNode; // 保存当前节点
+            }else{
+                this.next.addNode(newNode);
+            }
+        }
+
+        public void toArrayNode () {
+            LinkImpl.this.returnData [LinkImpl.this.foot ++] = this.data;
+            if(this.next != null) { // 还有下一个数据
+                this.next.toArrayNode();
+            }
+        }
+
+        public E getNode(int index) {
+            if(LinkImpl.this.foot ++ == index) { // 索引相同
+                return this.data;  // 要返回当前数据
+            } else {
+                return this.next.getNode(index);
+            }
+        }
+
+        public void setNode(int index, E data) {
+            if(LinkImpl.this.foot ++ == index) { // 索引相同
+                this.data = data;  // 要返回当前数据
+            } else {
+                this.next.setNode(index, data);
+            }
+        }
+    }
+    // ---------------以下为Link类中定义的成员-----------------
+    private Node root;  // 根节点
+    private int count; // 保存数据的个数
+    private int foot; // 描述的是操作数组的脚标
+    private Object [] returnData; // 返回的数据
+    // ---------------以下为Link类中定义的方法-----------------
+    @Override
+    public void add(E e) {
+        // 数据本身不具有关联特性,只有Node节点有,那么要实现关联就必须将数据包装在Node类中
+        Node node = new Node(e); // 创建一个新的节点
+        if(root == null) { // 现在没有根节点
+            this.root = node; // 第一个节点作为根节点
+        }else{
+            this.root.addNode(node); // 将新节点保存在合适的位置
+        }
+        this.count ++;
+    }
+
+    @Override
+    public int size() {
+        return this.count;
+    }
+
+    @Override
+    public boolean isEmpty() {
+        // return this.root == null;
+        return this.count == 0;
+    }
+
+    @Override
+    public Object[] toArray() {
+        // 判断是否为空
+        if(this.root == null){
+            return null;
+        }
+        this.foot = 0; //脚标清零
+        this.returnData =  new Object[this.count]; // 根据已有的长度新建一个数组
+        this.root.toArrayNode(); // 利用Node类进行递归获取数据
+        return this.returnData;
+    }
+
+    @Override
+    public E get(int index) {
+        if (index >= this.count) { // 索引应该在指定范围之内
+            return null;
+        } // 索引数据的获取应该由Node来完成
+        this.foot = 0; // 重置角标
+        return this.root.getNode(index);
+    }
+
+    @Override
+    public void set(int index, E data) {
+        if (index >= this.count) { // 索引应该在指定范围之内
+            return ;
+        } // 索引数据的获取应该由Node来完成
+        this.foot = 0; // 重置角标
+        this.root.setNode(index, data); // 修改数据
+    }
+}
+
+public class LinkDemo2 {
+    public static void main(String args[]) {
+        ILink<String> all = new LinkImpl<>();
+        System.out.println("[增加之前]数据的个数:" + all.size());
+        System.out.println("是否为空集合:" + all.isEmpty());
+        all.add("Hello");
+        all.add("World");
+        System.out.println("[增加之后]数据的个数:" + all.size());
+        System.out.println("是否为空集合:" + all.isEmpty());
+
+        Object[] result = all.toArray();
+        for (Object obj : result) {
+            System.out.println(obj);
+        }
+
+        System.out.println("***********************数据修改********************");
+        all.set(0, "你好");
+        System.out.println("**************************数据获取***************************");
+        System.out.println("获取第一个数据: " + all.get(0));
+        System.out.println("获取第二个数据: " + all.get(1));
+    }
+}
+```
+
+## 判断指定数据是否存在
+
+在一个集合里面往往会保存有大量的数据，有些时候需要判断某个数据是否存在，这个时候就可以
+通过对象比较的模式（equals方法）来完成判断.
+
+> 1.在ILink接口中追加判断的方法
+
+```
+public boolean contains(E data); // 判断数据 是否存在
+```
+
+> 2.在Node类中进行依次判断
+
+```
+ public boolean containNode(E data) {
+    if(this.data.equals(data)) { // 对象比较
+        return true;
+    } else {
+        if(this.next == null) { // 找不到后续节点
+            return false;  // 找不到
+        }else {
+            return this.next.containNode(data); // 向后继续寻找
+        }
+    }
+}
+```
+
+> 3.在LinkImpl子类里面实现此方法
+
+```
+  @Override
+    public boolean contains(E data) {
+        if(data == null) {
+            return false; // 没有数据
+        }
+        return this.root.containNode(data); // 交给Node类判断
+    }
+```
+
+> 完整代码
+
+```java
+package 链表;
+
+interface ILink<E> { // 设置泛型避免安全隐患
+    public void add(E e); // 增加数据
+    public int size(); // 获取数据的个数
+    public boolean isEmpty(); // 判断是否为空集合
+    public Object[] toArray(); // 将集合元素以数组的形式返回
+    public E get(int index); // 根据索引获取数据
+    public void set(int index,E data) ; // 修改索引数据
+    public boolean contains(E data); // 判断数据 是否存在
+}
+
+class LinkImpl<E> implements ILink<E> {
+    private class Node { // 保存的节点的数据关系
+        private E data; //保存的数据
+        private Node next; // 保存的下一个引用
+        public Node (E data) {  // 有数据的情况下才有意义
+            this.data = data;
+        }
+        // 第一次调用: this = LinkImpl.root;
+        // 第二次调用: this = LinkImpl.root.next;
+        // 第三次调用: this = LinkImpl.root.next.next;
+        public void addNode (Node newNode) { // 保存新的Node数据集
+            if(this.next == null){  // 当前节点的下一个节点为null
+                this.next = newNode; // 保存当前节点
+            }else{
+                this.next.addNode(newNode);
+            }
+        }
+
+        public void toArrayNode () {
+            LinkImpl.this.returnData [LinkImpl.this.foot ++] = this.data;
+            if(this.next != null) { // 还有下一个数据
+                this.next.toArrayNode();
+            }
+        }
+
+        public E getNode(int index) {
+            if(LinkImpl.this.foot ++ == index) { // 索引相同
+                return this.data;  // 要返回当前数据
+            } else {
+                return this.next.getNode(index);
+            }
+        }
+
+        public void setNode(int index, E data) {
+            if(LinkImpl.this.foot ++ == index) { // 索引相同
+                this.data = data;  // 要返回当前数据
+            } else {
+                this.next.setNode(index, data);
+            }
+        }
+
+        public boolean containNode(E data) {
+            if(this.data.equals(data)) { // 对象比较
+                return true;
+            } else {
+                if(this.next == null) { // 找不到后续节点
+                    return false;  // 找不到
+                }else {
+                    return this.next.containNode(data); // 向后继续寻找
+                }
+            }
+        }
+    }
+    // ---------------以下为Link类中定义的成员-----------------
+    private Node root;  // 根节点
+    private int count; // 保存数据的个数
+    private int foot; // 描述的是操作数组的脚标
+    private Object [] returnData; // 返回的数据
+    // ---------------以下为Link类中定义的方法-----------------
+    @Override
+    public void add(E e) {
+        // 数据本身不具有关联特性,只有Node节点有,那么要实现关联就必须将数据包装在Node类中
+        Node node = new Node(e); // 创建一个新的节点
+        if(root == null) { // 现在没有根节点
+            this.root = node; // 第一个节点作为根节点
+        }else{
+            this.root.addNode(node); // 将新节点保存在合适的位置
+        }
+        this.count ++;
+    }
+
+    @Override
+    public int size() {
+        return this.count;
+    }
+
+    @Override
+    public boolean isEmpty() {
+        // return this.root == null;
+        return this.count == 0;
+    }
+
+    @Override
+    public Object[] toArray() {
+        // 判断是否为空
+        if(this.root == null){
+            return null;
+        }
+        this.foot = 0; //脚标清零
+        this.returnData =  new Object[this.count]; // 根据已有的长度新建一个数组
+        this.root.toArrayNode(); // 利用Node类进行递归获取数据
+        return this.returnData;
+    }
+
+    @Override
+    public E get(int index) {
+        if (index >= this.count) { // 索引应该在指定范围之内
+            return null;
+        } // 索引数据的获取应该由Node来完成
+        this.foot = 0; // 重置角标
+        return this.root.getNode(index);
+    }
+
+    @Override
+    public void set(int index, E data) {
+        if (index >= this.count) { // 索引应该在指定范围之内
+            return ;
+        } // 索引数据的获取应该由Node来完成
+        this.foot = 0; // 重置角标
+        this.root.setNode(index, data); // 修改数据
+    }
+
+    @Override
+    public boolean contains(E data) {
+        if(data == null) {
+            return false; // 没有数据
+        }
+        return this.root.containNode(data); // 交给Node类判断
+    }
+}
+
+public class LinkDemo2 {
+    public static void main(String args[]) {
+        ILink<String> all = new LinkImpl<>();
+        System.out.println("[增加之前]数据的个数:" + all.size());
+        System.out.println("是否为空集合:" + all.isEmpty());
+        all.add("Hello");
+        all.add("World");
+        System.out.println("[增加之后]数据的个数:" + all.size());
+        System.out.println("是否为空集合:" + all.isEmpty());
+
+        Object[] result = all.toArray();
+        for (Object obj : result) {
+            System.out.println(obj);
+        }
+
+        System.out.println("***********************数据修改********************");
+        all.set(0, "你好");
+        System.out.println("**************************数据获取***************************");
+        System.out.println("获取第一个数据: " + all.get(0));
+        System.out.println("获取第二个数据: " + all.get(1));
+        System.out.println("*************************数据包含判断********************");
+        System.out.println("数据是否包含World:" + all.contains("World"));
+        System.out.println("数据是否包含hello:" + all.contains("hello"));
+    }
+}
+```
+
+由于整个链表没有null数据的存在，所以整体的程序在判断的时候直接使用每一个的节点数据发出equals()
+方法调用即可。
+
+##　数据的删除处理
+
+数据的删除指的是可以从集合里面删除掉指定的一个数据内容，也就是说此时传递的是数据内容，
+如果要实现这种操作依然需要对象比较的支持。但是对于集合数据的删除我们需要考虑两种情况：
+
+* 要删除是根节点数据(LinkImpl与根节点有关，所以这个判断由根节点完成)；
+
+![](http://imgs.loong.io/image/linkedlist/deleteData.png)
+
+* 要删除的不是根节点数据（由Node类负责）；
+
+![](http://imgs.loong.io/image/linkedlist/deleteData1.png)
+
+> 1.在ILink接口里面追加新的删除方法
+
+```
+private void remove(E data); // 数据删除
+```
+
+> 2.在LinkImpl里面实现根节点的判断
+
+```
+  @Override
+    public void remove(E data) {
+        if(this.contains(data)){ // 判断数据是否存在
+            if(data.equals(this.root.data)) { // 要删除节点为根节点
+                this.root = this.root.next;  // 根的下一个节点
+            }
+            this.count --;
+        }
+    }
+```
+
+> 3.如果要删除节点不为根节点就需要进行后续节点判断，但是请一定要记住，此时根节点已经判断完成了，再判断应该从根节点的下一个开始判断，在Node类中追加删除处理；
+
+```
+ public void removeNode(Node previous, E data) {
+            if(data.equals(this.data)) {
+                previous.next = this.next; // 空出当前节点
+            }else {
+                if(this.next != null) {  // 有后续节点
+                    this.next.removeNode(this, data); //向后继续删除
+                }
+            }
+        }
+```
+
+> 4.完善LinkImpl子类中的方法
+
+```
+ @Override
+    public void remove(E data) {
+        if(this.contains(data)){ // 判断数据是否存在
+            if(data.equals(this.root.data)) { // 要删除节点为根节点
+                this.root = this.root.next;  // 根的下一个节点
+            }else { // 交由Node类负责删除
+                this.root.next.removeNode(this.root, data);
+            }
+            this.count --;
+        }
+    }
+```
+
+> 完整代码
+
+```java
+package 链表;
+
+interface ILink<E> { // 设置泛型避免安全隐患
+    public void add(E e); // 增加数据
+    public int size(); // 获取数据的个数
+    public boolean isEmpty(); // 判断是否为空集合
+    public Object[] toArray(); // 将集合元素以数组的形式返回
+    public E get(int index); // 根据索引获取数据
+    public void set(int index,E data) ; // 修改索引数据
+    public boolean contains(E data); // 判断数据 是否存在
+    public  void remove(E data); // 数据删除
+}
+
+class LinkImpl<E> implements ILink<E> {
+    private class Node { // 保存的节点的数据关系
+        private E data; //保存的数据
+        private Node next; // 保存的下一个引用
+        public Node (E data) {  // 有数据的情况下才有意义
+            this.data = data;
+        }
+        // 第一次调用: this = LinkImpl.root;
+        // 第二次调用: this = LinkImpl.root.next;
+        // 第三次调用: this = LinkImpl.root.next.next;
+        public void addNode (Node newNode) { // 保存新的Node数据集
+            if(this.next == null){  // 当前节点的下一个节点为null
+                this.next = newNode; // 保存当前节点
+            }else{
+                this.next.addNode(newNode);
+            }
+        }
+
+        public void toArrayNode () {
+            LinkImpl.this.returnData [LinkImpl.this.foot ++] = this.data;
+            if(this.next != null) { // 还有下一个数据
+                this.next.toArrayNode();
+            }
+        }
+
+        public E getNode(int index) {
+            if(LinkImpl.this.foot ++ == index) { // 索引相同
+                return this.data;  // 要返回当前数据
+            } else {
+                return this.next.getNode(index);
+            }
+        }
+
+        public void setNode(int index, E data) {
+            if(LinkImpl.this.foot ++ == index) { // 索引相同
+                this.data = data;  // 要返回当前数据
+            } else {
+                this.next.setNode(index, data);
+            }
+        }
+
+        public boolean containNode(E data) {
+            if(data.equals(this.data)) { // 对象比较
+                return true;
+            } else {
+                if(this.next == null) { // 找不到后续节点
+                    return false;  // 找不到
+                }else {
+                    return this.next.containNode(data); // 向后继续寻找
+                }
+            }
+        }
+
+        public void removeNode(Node previous, E data) {
+            if(data.equals(this.data)) {
+                previous.next = this.next; // 空出当前节点
+            }else {
+                if(this.next != null) {  // 有后续节点
+                    this.next.removeNode(this, data); //向后继续删除
+                }
+            }
+        }
+
+    }
+    // ---------------以下为Link类中定义的成员-----------------
+    private Node root;  // 根节点
+    private int count; // 保存数据的个数
+    private int foot; // 描述的是操作数组的脚标
+    private Object [] returnData; // 返回的数据
+    // ---------------以下为Link类中定义的方法-----------------
+    @Override
+    public void add(E e) {
+        // 数据本身不具有关联特性,只有Node节点有,那么要实现关联就必须将数据包装在Node类中
+        Node node = new Node(e); // 创建一个新的节点
+        if(root == null) { // 现在没有根节点
+            this.root = node; // 第一个节点作为根节点
+        }else{
+            this.root.addNode(node); // 将新节点保存在合适的位置
+        }
+        this.count ++;
+    }
+
+    @Override
+    public int size() {
+        return this.count;
+    }
+
+    @Override
+    public boolean isEmpty() {
+        // return this.root == null;
+        return this.count == 0;
+    }
+
+    @Override
+    public Object[] toArray() {
+        // 判断是否为空
+        if(this.root == null){
+            return null;
+        }
+        this.foot = 0; //脚标清零
+        this.returnData =  new Object[this.count]; // 根据已有的长度新建一个数组
+        this.root.toArrayNode(); // 利用Node类进行递归获取数据
+        return this.returnData;
+    }
+
+    @Override
+    public E get(int index) {
+        if (index >= this.count) { // 索引应该在指定范围之内
+            return null;
+        } // 索引数据的获取应该由Node来完成
+        this.foot = 0; // 重置角标
+        return this.root.getNode(index);
+    }
+
+    @Override
+    public void set(int index, E data) {
+        if (index >= this.count) { // 索引应该在指定范围之内
+            return ;
+        } // 索引数据的获取应该由Node来完成
+        this.foot = 0; // 重置角标
+        this.root.setNode(index, data); // 修改数据
+    }
+
+    @Override
+    public boolean contains(E data) {
+        if(data == null) {
+            return false; // 没有数据
+        }
+        return this.root.containNode(data); // 交给Node类判断
+    }
+
+    @Override
+    public void remove(E data) {
+        if(this.contains(data)){ // 判断数据是否存在
+            if(data.equals(this.root.data)) { // 要删除节点为根节点
+                this.root = this.root.next;  // 根的下一个节点
+            }else { // 交由Node类负责删除
+                this.root.next.removeNode(this.root, data);
+            }
+            this.count --;
+        }
+    }
+}
+
+public class LinkDemo2 {
+    public static void main(String args[]) {
+        ILink<String> all = new LinkImpl<>();
+        System.out.println("[增加之前]数据的个数:" + all.size());
+        System.out.println("是否为空集合:" + all.isEmpty());
+        all.add("Hello");
+        all.add("World");
+        System.out.println("[增加之后]数据的个数:" + all.size());
+        System.out.println("是否为空集合:" + all.isEmpty());
+
+        Object[] result = all.toArray();
+        for (Object obj : result) {
+            System.out.println(obj);
+        }
+
+        System.out.println("***********************数据修改********************");
+        all.set(0, "你好");
+        System.out.println("**************************数据获取***************************");
+        System.out.println("获取第一个数据: " + all.get(0));
+        System.out.println("获取第二个数据: " + all.get(1));
+        System.out.println("*************************数据包含判断********************");
+        System.out.println("数据是否包含World:" + all.contains("World"));
+        System.out.println("数据是否包含hello:" + all.contains("hello"));
+        System.out.println("*************************删除数据********************");
+        all.remove("World");
+        System.out.println("数据是否包含World:" + all.contains("World"));
+
+    }
+}
+```
+
+删除的逻辑就是用了引用改变。
+
+## 清空链表
+
+有的时候需要进行链表的整体清空处理，这个时候结可以直接根据根元素来进行控制，只要root设置为了null，那么后续的节点就都不存在了。
+
+> 1.在ILink接口里面追加有清空处理方法；
+```
+public void clean(); // 数据的清空
+```
+
+> 2.在LinkImpl子类里覆写方法
+
+```
+@Override
+public void clean() {
+    this.root = null; // 后续的节点都没有了
+    this.count = 0;  // 个数清零
+}
+```
+
+> 完整代码
+
+```java
+package 链表;
+
+interface ILink<E> { // 设置泛型避免安全隐患
+    public void add(E e); // 增加数据
+    public int size(); // 获取数据的个数
+    public boolean isEmpty(); // 判断是否为空集合
+    public Object[] toArray(); // 将集合元素以数组的形式返回
+    public E get(int index); // 根据索引获取数据
+    public void set(int index,E data) ; // 修改索引数据
+    public boolean contains(E data); // 判断数据 是否存在
+    public  void remove(E data); // 数据删除
+    public void clean(); // 数据的清空
+}
+
+class LinkImpl<E> implements ILink<E> {
+    private class Node { // 保存的节点的数据关系
+        private E data; //保存的数据
+        private Node next; // 保存的下一个引用
+        public Node (E data) {  // 有数据的情况下才有意义
+            this.data = data;
+        }
+        // 第一次调用: this = LinkImpl.root;
+        // 第二次调用: this = LinkImpl.root.next;
+        // 第三次调用: this = LinkImpl.root.next.next;
+        public void addNode (Node newNode) { // 保存新的Node数据集
+            if(this.next == null){  // 当前节点的下一个节点为null
+                this.next = newNode; // 保存当前节点
+            }else{
+                this.next.addNode(newNode);
+            }
+        }
+
+        public void toArrayNode () {
+            LinkImpl.this.returnData [LinkImpl.this.foot ++] = this.data;
+            if(this.next != null) { // 还有下一个数据
+                this.next.toArrayNode();
+            }
+        }
+
+        public E getNode(int index) {
+            if(LinkImpl.this.foot ++ == index) { // 索引相同
+                return this.data;  // 要返回当前数据
+            } else {
+                return this.next.getNode(index);
+            }
+        }
+
+        public void setNode(int index, E data) {
+            if(LinkImpl.this.foot ++ == index) { // 索引相同
+                this.data = data;  // 要返回当前数据
+            } else {
+                this.next.setNode(index, data);
+            }
+        }
+
+        public boolean containNode(E data) {
+            if(data.equals(this.data)) { // 对象比较
+                return true;
+            } else {
+                if(this.next == null) { // 找不到后续节点
+                    return false;  // 找不到
+                }else {
+                    return this.next.containNode(data); // 向后继续寻找
+                }
+            }
+        }
+
+        public void removeNode(Node previous, E data) {
+            if(data.equals(this.data)) {
+                previous.next = this.next; // 空出当前节点
+            }else {
+                if(this.next != null) {  // 有后续节点
+                    this.next.removeNode(this, data); //向后继续删除
+                }
+            }
+        }
+
+    }
+    // ---------------以下为Link类中定义的成员-----------------
+    private Node root;  // 根节点
+    private int count; // 保存数据的个数
+    private int foot; // 描述的是操作数组的脚标
+    private Object [] returnData; // 返回的数据
+    // ---------------以下为Link类中定义的方法-----------------
+    @Override
+    public void add(E e) {
+        // 数据本身不具有关联特性,只有Node节点有,那么要实现关联就必须将数据包装在Node类中
+        Node node = new Node(e); // 创建一个新的节点
+        if(root == null) { // 现在没有根节点
+            this.root = node; // 第一个节点作为根节点
+        }else{
+            this.root.addNode(node); // 将新节点保存在合适的位置
+        }
+        this.count ++;
+    }
+
+    @Override
+    public int size() {
+        return this.count;
+    }
+
+    @Override
+    public boolean isEmpty() {
+        // return this.root == null;
+        return this.count == 0;
+    }
+
+    @Override
+    public Object[] toArray() {
+        // 判断是否为空
+        if(this.root == null){
+            return null;
+        }
+        this.foot = 0; //脚标清零
+        this.returnData =  new Object[this.count]; // 根据已有的长度新建一个数组
+        this.root.toArrayNode(); // 利用Node类进行递归获取数据
+        return this.returnData;
+    }
+
+    @Override
+    public E get(int index) {
+        if (index >= this.count) { // 索引应该在指定范围之内
+            return null;
+        } // 索引数据的获取应该由Node来完成
+        this.foot = 0; // 重置角标
+        return this.root.getNode(index);
+    }
+
+    @Override
+    public void set(int index, E data) {
+        if (index >= this.count) { // 索引应该在指定范围之内
+            return ;
+        } // 索引数据的获取应该由Node来完成
+        this.foot = 0; // 重置角标
+        this.root.setNode(index, data); // 修改数据
+    }
+
+    @Override
+    public boolean contains(E data) {
+        if(data == null) {
+            return false; // 没有数据
+        }
+        return this.root.containNode(data); // 交给Node类判断
+    }
+
+    @Override
+    public void remove(E data) {
+        if(this.contains(data)){ // 判断数据是否存在
+            if(data.equals(this.root.data)) { // 要删除节点为根节点
+                this.root = this.root.next;  // 根的下一个节点
+            }else { // 交由Node类负责删除
+                this.root.next.removeNode(this.root, data);
+            }
+            this.count --;
+        }
+    }
+
+    @Override
+    public void clean() {
+        this.root = null; // 后续的节点都没有了
+        this.count = 0;  // 个数清零
+    }
+}
+
+public class LinkDemo2 {
+    public static void main(String args[]) {
+        ILink<String> all = new LinkImpl<>();
+        System.out.println("[增加之前]数据的个数:" + all.size());
+        System.out.println("是否为空集合:" + all.isEmpty());
+        all.add("Hello");
+        all.add("World");
+        System.out.println("[增加之后]数据的个数:" + all.size());
+        System.out.println("是否为空集合:" + all.isEmpty());
+
+        Object[] result = all.toArray();
+        for (Object obj : result) {
+            System.out.println(obj);
+        }
+
+        System.out.println("***********************数据修改********************");
+        all.set(0, "你好");
+        System.out.println("**************************数据获取***************************");
+        System.out.println("获取第一个数据: " + all.get(0));
+        System.out.println("获取第二个数据: " + all.get(1));
+        System.out.println("*************************数据包含判断********************");
+        System.out.println("数据是否包含World:" + all.contains("World"));
+        System.out.println("数据是否包含hello:" + all.contains("hello"));
+        System.out.println("*************************删除数据********************");
+        all.remove("World");
+        System.out.println("数据是否包含World:" + all.contains("World"));
+        System.out.println("*************************清空数据********************");
+        all.clean();
+        System.out.println("数据的个数:" + all.size());
+
+
+    }
+}
+```
+
+以上就是最简单最基础的单向链表的实现。
