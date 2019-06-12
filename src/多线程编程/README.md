@@ -239,3 +239,150 @@ public class ThreadDemo {
 ```
 
 在以后的开发之中对于多线程的实现,优先考虑的就是Runnable接口实现,并且永恒都是通过Thread类对象启动多线程.
+
+
+## Thread和Runnable关系
+
+经过一系列的分析之后可以发现,在多线程的实现过程之中已经有了两种做法:Thread类和Runnable接口,如果从代码本身来讲使用Runnable是最方便的,因为其可以避免单继承的局限,同时也可以更好的进行功能的扩充.
+
+但是从结构上也需要来观察Thread和Runnable的联系.Thread类的定义:
+
+```
+public class Thread extends Object implements Runnable {}
+```
+
+发现Thread类也是Runnable接口的子类,那么在之前继承Thread类的时候实际上覆写的还是Runnable接口的run()方法,此时来观察一下程序的类结构.
+
+```java
+package 多线程编程;
+
+class MyThread extends Thread { // 线程的主体类
+    private String title;
+    public MyThread(String title){
+        this.title = title;
+    }
+    @Override
+    public void run() { // 线程的主体方法
+        for( int x =0; x < 10; x++) {
+            System.out.println(this.title + "运行， x = "  + x);
+        }
+    }
+}
+
+public class ThreadDemo {
+    public static void main(String[] args) {
+        new MyThread("线程A").start();
+        new MyThread("线程B").start();
+        new MyThread("线程C").start();
+    }
+}
+```
+
+![](http://imgs.loong.io/image/Thread/ThreadAndRunnable.jpg)
+
+多线程的设计之中,使用了代理设计模式的结构,用户自定义的线程主体只是负责项目核心功能的实现,而所有的辅助实现全部交与Thread类来处理.
+
+在进行Thread类启动多线程的时候调用的是start()方法,而后找到的是run方法,当我们通过Thread类的构造方法传递了Runnable的接口对象的时候,那么该接口对象将会被Thread类中的target属性所保存,在start()
+方法执行的时候会调用Thread类中的run()方法,而这个run()方法去调用了Runnable接口子类被覆写过的run()方法去了.
+
+多线程开发实质上是在于多个线程可以进行同一资源的抢占,那么Thread主要描述的是线程,而资源的描述是通过Runnable来完成的.
+
+![](http://imgs.loong.io/image/Thread/ThreadDevelop.jpg)
+
+范例: 利用卖票程序来实现多个线程的资源并发访问
+
+```java
+package 多线程编程;
+
+/**
+ * 卖票程序
+ */
+
+class ThirdThread implements Runnable {
+    private int ticket = 5;
+    @Override
+    public void run() {
+        for(int x = 0; x < 100; x++){
+            if(this.ticket > 0) {
+                System.out.println("现在的票数为:" + this.ticket--);
+            }
+        }
+    }
+}
+
+public class SaleOfTickets {
+    public static void main(String[] args) {
+        Runnable run = new ThirdThread();
+        new Thread(run).start();
+        new Thread(run).start();
+        new Thread(run).start();
+    }
+}
+```
+
+通过内存分析图来分析本程序的执行结构.
+
+![](http://imgs.loong.io/image/Thread/memoryAnalysis.jpg)
+
+## Callable实现多线程
+
+从最传统的开发来讲,如果要进行多线程的实现肯定依靠的就是Runnable,但是Runnable接口有一个缺点:当线程执行完毕之后无法获取一个返,所以从jdk1.5之后就提出了一个新的线程实现
+接口:java.util.concurrent.Callable接口,首先观察这个接口的定义:
+
+```
+@FunctionalInterface
+public interface Callable<V> {
+  public V call() throws Exception;
+}
+```
+
+可以发现Callable定义的时候可以设置一个泛型,此泛型的类型就是返回数据的类型,这样的好处是可以避免向下转型所带来的安全隐患.
+
+![](http://imgs.loong.io/image/Thread/Callable.jpg)
+
+范例: 使用Callable实现多线程处理
+
+```java
+package 多线程编程;
+
+import java.util.concurrent.Callable;
+import java.util.concurrent.Future;
+import java.util.concurrent.FutureTask;
+
+class FourthThread implements Callable<String> {
+    @Override
+    public String call() {
+        for (int i = 0; i < 10; i++){
+            System.out.println("线程执行, i=" + i);
+        }
+        return "线程执行结束";
+    }
+}
+
+public class CallableDemo {
+    public static void main(String[] args) throws Exception{
+        FutureTask<String> task = new FutureTask<>(new FourthThread());
+        new Thread(task).start();
+        System.out.println("线程返回数据:" + task.get());
+    }
+}
+```
+
+> Callable与Runnable之前的区别?
+>> Runnable是在jdk1.0的时候提出的多线程的实现接口,而Callable接口是在jdk1.5之后提出的;
+>> java.lang.Runnable接口之中只提供有一个run()方法,并且没有返回值;
+>> java.util.concurrent.Callable接口提供有call()方法,提供有返回值;
+
+## 多线程的运行状态
+
+对于多线程的开支而言,编写程序的过程之中总是按照:定义线程主体类,然后通过Threa类进行线程的启动,但是并不意味着你掉用了start()方法,线程就已经开始运行了,因为
+整体的线程处理有自己的一套运行的状态.
+
+![](http://imgs.loong.io/image/Thread/threadStart.jpg)
+
+- 任何一个线程的对象都应该使用Thread类进行封装,所以线程的启动使用的是start(),但是启动的时候实际上若干个线程都将进入到一种就绪状态,现在并没有执行;
+- 进入就绪状态之后就需要等待进行资源调度,当某一个线程调度成功之后则进入到运行状态(run()方法),但是所有的线程不可能一直持续执行下去,中间需要产生一些暂停的状态,
+例如:某个线程执行一段时间之后就需要让出资源,而后这个线程就将进入到阻塞状态,随后重新回归到就绪状态;
+- 当run()方法执行完毕之后,实际上该线程的主要任务也就结束了,那么此时就可以直接进入到停止状态.
+
+
