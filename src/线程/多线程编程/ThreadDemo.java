@@ -1,4 +1,4 @@
-package 多线程编程;
+package 线程.多线程编程;
 
 /**
  * 继承Thread类实现多线程

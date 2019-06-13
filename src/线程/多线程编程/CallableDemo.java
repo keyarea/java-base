@@ -1,7 +1,6 @@
-package 多线程编程;
+package 线程.多线程编程;
 
 import java.util.concurrent.Callable;
-import java.util.concurrent.Future;
 import java.util.concurrent.FutureTask;
 
 class FourthThread implements Callable<String> {
