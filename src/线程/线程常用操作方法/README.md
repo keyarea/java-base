@@ -265,13 +265,119 @@ public class ThreadStart {
 > 在进行线程强制执行的时候一定要获取强制执行线程的对象之后才可以执行join()调用.
  
 
+## 线程的礼让
 
+> 线程的礼让指的是先将资源让出去让别的线程先执行.线程的礼让可以使用Thread中提供的方法:
+>> - 礼让: `public static void yeild();`
 
+范例: 使用礼让操作
 
+```java
+package 线程.线程常用操作方法;
 
+/**
+ * 线程礼让
+ */
 
+public class ThreadYield {
+    public static void main(String[] args) throws Exception{
+        Thread mainThread = Thread.currentThread();
+        Thread th = new Thread(()-> {
+            for (int x = 0; x < 100; x++) {
 
+                if(x % 3 == 0) {
+                    Thread.yield();
+                    System.out.println("子线程礼让");
+                }
+                try {
+                    Thread.sleep(100);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
 
+                System.out.println(Thread.currentThread().getName() + "线程运行了, x = " + x);
+            }
+        });
+        th.start();
+
+        for (int y = 0; y < 100; y++) {
+            System.out.println("main线程运行, y=" + y );
+            Thread.sleep(100);
+        }
+    }
+}
+```
+
+礼让执行的时候每一次调用`yield()`方法都只会礼让一次当前的资源.
+
+## 线程优先级
+
+从理论上来讲,线程的优先级越高越有可能先执行(越有可能先抢占到资源).在Thread类里面针对
+优先级有两个处理方法:
+
+- 设置优先级: `public final void setPriority(int newPriority)`;
+- 获取优先级: `public final int getPriority()`;
+
+在进行优先级定义的时候都是通过int型的数字来完成的,而对于此数字的选择在Thread类里面就定义有三个常量:
+
+- 最高优先级: `public static final int MAX_PRIORITY`, 10;
+- 中等优先级: `public static final int NORM_PRIORITY`, 5;
+- 最低优先级: `public static final int MIN_PRIORITY`, 1;
+
+范例: 观察优先级
+
+```java
+package 线程.线程常用操作方法;
+
+/**
+ * 线程优先级
+ */
+
+public class ThreadPriority {
+    public static void main(String[] args) {
+        Runnable run = () -> {
+            for (int x = 0; x < 10; x++) {
+                System.out.println(Thread.currentThread().getName()+ "执行");
+                try {
+                    Thread.sleep(100);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
+        };
+        Thread threadA = new Thread(run, "线程A");
+        Thread threadB = new Thread(run, "线程B");
+        Thread threadC = new Thread(run, "线程C");
+        threadA.setPriority(Thread.MAX_PRIORITY);
+        threadB.setPriority(Thread.NORM_PRIORITY);
+        threadC.setPriority(Thread.MIN_PRIORITY);
+        
+        threadA.start();
+        threadB.start();
+        threadC.start();
+
+    }
+}
+
+```
+
+主线程也是一个线程,那么主线程的优先级为多少呢?
+
+```java
+package 线程.线程常用操作方法;
+
+/**
+ * 线程优先级
+ */
+
+public class ThreadPriority {
+    public static void main(String[] args) {
+        System.out.println(Thread.currentThread().getPriority()); // 5
+    }
+}
+```
+
+主线程属于中等优先级,而默认创建的线程也是中等优先级.
 
 
 
