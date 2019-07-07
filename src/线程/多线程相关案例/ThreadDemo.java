@@ -6,7 +6,7 @@ class Resource {
     // flag为true可以执行加法操作,不可以执行减法操作
     // flag为false可以执行减法操作,不可以执行加法操作
     public synchronized void add() throws Exception {
-       if(!this.flag) { // flag为false只能执行减法操作
+       while (!this.flag) { // flag为false只能执行减法操作
            super.wait(); // 需要等待
        }
        Thread.sleep(100);
@@ -16,7 +16,7 @@ class Resource {
         super.notifyAll(); // 唤醒其他线程
     }
     public synchronized void sub() throws Exception {
-        if(this.flag) { // flag为true只能进行加法操作,减法操作需要等待
+        while(this.flag) { // flag为true只能进行加法操作,减法操作需要等待
             super.wait();
         }
         Thread.sleep(100);
